@@ -12,6 +12,13 @@
 // I have not yet found the solution.
 //
 // Log of Insanity
+// DAY 2:
+// Thanks to "insofaras" from the handmade_hero chat for finding the solution
+// to this problem. Turns out the messages for the language bar were being blocked
+// by my process because my reading of some MSDN documentation was too hasty. Go
+// to GetMessage to see a full description of the problem I was having.
+//
+//
 // DAY 1:
 // I looked around MSDN for a while, reading about lots of layout manipulating
 // functions. I also found the WM_INPUTLANGECHANGE message, but that message is
@@ -79,16 +86,16 @@ int WinMain(
     winclass.hInstance = hInstance;
     winclass.lpszClassName = "lang-test-class";
     
-    ATOM winclassatom = RegisterClass(&winclass);
+    ATOM winclassatom = RegisterClassA(&winclass);
     
     if (winclassatom == 0){
         return(1);
     }
     
-    HWND window = CreateWindow(
+    HWND window = CreateWindowA(
         "lang-test-class",
         "lang test window",
-        WS_OVERLAPPEDWINDOW,
+        WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
         CW_USEDEFAULT,
         CW_USEDEFAULT,
         400,
@@ -116,7 +123,12 @@ int WinMain(
     
     for (win32.keep_playing = 1; win32.keep_playing;){
         MSG msg;
-        GetMessage(&msg, window, 0, 0);
+        // NOTE(allen): This turns out to be the crucial point. The second parameter filters out
+        // messages by a window handle, and it turns out the language bar is one of those things
+        // that needs to process input through the active process but the messages aren't tied
+        // to your main window, so those messages get blocked if you put the handle there. Long
+        // story short: put a 0 there.
+        GetMessage(&msg, 0, 0, 0);
         TranslateMessage(&msg);
         DispatchMessage(&msg);
     }
